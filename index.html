@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --header-bg: #1E2A3A;
+    --page-bg: #F4F6F8;
+    --card-bg: #FFFFFF;
+    --accent: #3A6EA5;
+    --accent-dark: #2d5a8a;
+    --positive: #4A7C59;
+    --negative: #c0392b;
+    --text-main: #2D3748;
+    --text-sub: #718096;
+    --border: #E2E8F0;
+  }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--page-bg); color: var(--text-main); min-height: 100vh; }
+  .top-bar { background: var(--header-bg); color: #fff; padding: 16px 32px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .top-bar h1 { font-size: 1.2rem; font-weight: 700; }
+  #status { font-size: 0.82rem; opacity: .75; }
+  .tabs-bar { background:#16202e; display:flex; overflow-x:auto; padding:10px 24px 0; gap:3px; scrollbar-width:none; align-items:flex-end; }
+  .tabs-bar::-webkit-scrollbar { display:none; }
+  .tab-btn { position:relative; padding:9px 26px 12px; font-size:.82rem; font-weight:600; color:rgba(255,255,255,.6); background:rgba(255,255,255,.08); border:none; border-radius:10px 10px 0 0; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; min-width:110px; text-align:center; }
+  .tab-btn.active { background: var(--page-bg); color: var(--accent); font-weight:700; padding-bottom:14px; z-index:2; box-shadow:0 -2px 6px rgba(0,0,0,.15); }
+  .tab-content { display:none; padding:32px; }
+  .tab-content.active { display:block; }
+  .resumo-panel { position:relative; background:var(--card-bg); border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05); border-left:5px solid var(--accent); padding:24px 28px 40px; display:flex; flex-wrap:wrap; gap:32px; align-items:center; }
+  .metricas-table { flex:1 1 340px; border-collapse:collapse; width:100%; }
+  .metricas-table thead th { font-size:.67rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-sub); font-weight:700; padding:0 16px 8px 0; text-align:left; border-bottom:1px solid var(--border); }
+  .metricas-table thead th:not(:first-child){ text-align:right; }
+  .metricas-table tbody td { padding:10px 16px 10px 0; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .metricas-table tbody tr:last-child td { border-bottom:none; }
+  .td-label { font-size:.82rem; font-weight:600; color:var(--text-sub); white-space:nowrap; display:flex; align-items:center; gap:8px; }
+  .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .td-valor { text-align:right; font-size:1rem; font-weight:700; color:var(--text-main); white-space:nowrap; padding-right:20px !important; }
+  .td-pct { text-align:right; white-space:nowrap; }
+  .pct-pill { display:inline-block; font-size:.73rem; font-weight:700; padding:3px 10px; border-radius:20px; min-width:58px; text-align:center; }
+  .dot-orcado { background:#CBD5E0; }
+  .dot-realizado { background:var(--accent); }
+  .dot-recebido { background:var(--positive); }
+  .dot-saldo-pos { background:var(--accent); }
+  .dot-saldo-neg { background:var(--negative); }
+  .pill-orcado { background:#EDF2F7; color:var(--text-sub); }
+  .pill-realizado { background:#dbeafe; color:var(--accent); }
+  .pill-recebido { background:#d1fae5; color:var(--positive); }
+  .pill-saldo-pos { background:#dbeafe; color:var(--accent); }
+  .pill-saldo-neg { background:#fee2e2; color:var(--negative); }
+  .c-orcado { color:var(--text-sub); }
+  .c-realizado { color:var(--accent); }
+  .c-recebido { color:var(--positive); }
+  .c-saldo-pos { color:var(--accent); }
+  .c-saldo-neg { color:var(--negative); }
+  .pct-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:110px; }
+  .pct-circle { width:100px; height:100px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(var(--cor) var(--grau), #E2E8F0 0deg); position:relative; }
+  .pct-circle::after { content:''; position:absolute; width:72px; height:72px; background:var(--card-bg); border-radius:50%; }
+  .pct-num { position:relative; z-index:1; font-size:1rem; font-weight:800; }
+  .pct-label { font-size:.67rem; color:var(--text-sub); text-align:center; max-width:110px; line-height:1.4; }
+  .top-rubricas { flex:1 1 220px; display:flex; flex-direction:column; gap:12px; }
+  .top-rubricas-title { font-size:.67rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-sub); font-weight:700; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .rubrica-item { display:flex; flex-direction:column; gap:4px; }
+  .rubrica-bar-label { font-size:.78rem; font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px; }
+  .rubrica-bar-sub { display:flex; align-items:center; gap:8px; }
+  .rubrica-bg { flex:1; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .rubrica-fill { height:100%; border-radius:4px; background:var(--accent); }
+  .rubrica-val { font-size:.74rem; font-weight:700; color:var(--text-sub); white-space:nowrap; }
+  .resumo-footer { position:absolute; bottom:10px; right:20px; display:flex; align-items:center; gap:5px; font-size:.67rem; color:#A0AEC0; }
+  .expand-btn,.analise-toggle { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:18px; padding:11px; background:var(--card-bg); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; font-size:.81rem; font-weight:600; color:var(--accent); }
+  .expand-btn .arrow { display:inline-block; transition:transform .3s; font-size:1rem; }
+  .expand-btn.open .arrow { transform:rotate(180deg); }
+  .detalhe-wrap { overflow:hidden; max-height:0; transition:max-height .4s ease; margin-top:0; }
+  .detalhe-wrap.open { max-height:5000px; margin-top:16px; }
+  .detalhe-inner { background:var(--card-bg); border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; }
+  .detalhe-header { background:var(--header-bg); color:#fff; padding:10px 20px; font-size:.86rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:15px; }
+  .detalhe-hint { font-size:.72rem; opacity:.7; font-style:italic; }
+  .analise-toggle { margin-top:14px; }
+  .analise-wrap { overflow:hidden; max-height:0; transition:max-height .35s ease; margin-top:0; }
+  .analise-wrap.open { max-height:2200px; margin-top:12px; }
+  .analise-inner { background:var(--card-bg); border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; }
+  .analise-header { background:var(--header-bg); color:#fff; padding:13px 20px; font-size:.86rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+  .analise-hint { font-size:.72rem; opacity:.75; font-style:italic; }
+  .detail-table { border-collapse:collapse; font-size:.79rem; width:100%; }
+  .detail-table th { background:var(--accent); color:#fff; padding:9px 12px; text-align:center; font-weight:600; white-space:nowrap; position:sticky; top:0; z-index:2; }
+  .detail-table th.col-rubrica { text-align:left; min-width:220px; position:sticky; top:0; left:0; z-index:3; background:var(--accent-dark); }
+  .detail-table td { padding:7px 12px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; color:var(--text-main); }
+  .detail-table td.col-rubrica { text-align:left; font-weight:500; position:sticky; left:0; z-index:1; }
+  
+  /* ESTILOS DE FEEDBACK VISUAL PARA O MODO EDICÃO SELECIONADO */
+  .detail-table td.editavel { transition: background-color 0.15s, cursor 0.15s; }
+  body.modo-edicao-ativo .detail-table td.editavel { cursor: pointer; background-color: #fffbeb; }
+  body.modo-edicao-ativo .detail-table td.editavel:hover { background-color: #fef3c7 !important; }
+
+  .table-scroll { overflow-x:auto; }
+  .row-orcado { background:#F7FAFC; }
+  .row-realizado { background:var(--card-bg); }
+  .row-total td { background:#EDF2F7 !important; font-weight:700; border-top:2px solid #CBD5E0; }
+  .row-receita-sep td, .row-saldo-sep td { background:#F8FAFC !important; border-top:2px solid #D6E3F1; border-bottom:1px solid #D6E3F1; padding:8px 12px; }
+  .receita-sep-label, .saldo-sep-label { display:inline-flex; align-items:center; gap:8px; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); }
+  .receita-sep-label::before, .saldo-sep-label::before { content:''; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .row-receita-orc { background:#F7FAFC; }
+  .row-receita-real { background:var(--card-bg); }
+  .row-saldo-orc { background:#F7FAFC; }
+  .row-saldo-real { background:var(--card-bg); }
+  .tipo-badge { display:inline-block; font-size:.62rem; padding:1px 5px; border-radius:3px; margin-left:6px; vertical-align:middle; font-weight:600; }
+  .badge-orc { background:#dbeafe; color:var(--accent); }
+  .badge-real { background:#d1fae5; color:var(--positive); }
+  .badge-rec { background:#e6fffa; color:#166534; }
+  .badge-saldo { background:#e9eef6; color:var(--accent); }
+  .badge-ok { background:#d1fae5; color:#166534; }
+  .badge-atencao { background:#fef3c7; color:#92400e; }
+  .badge-ruim { background:#fee2e2; color:#991b1b; font-size: 13px; }
+  .analise-grid { display:flex; gap:16px; align-items:flex-start; padding:16px; }
+  .analise-left { flex:1 1 55%; min-width:0; }
+  .analise-right { flex:1 1 45%; min-width:0; position:sticky; top:12px; }
+  .filter-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .month-select { padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-weight:600; color:var(--text-main); }
+  .summary-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:0; box-shadow:0 1px 4px rgba(0,0,0,.04); overflow:hidden; }
+  .summary-title { font-weight:400; color:var(--header-bg); padding:14px 14px 8px; }
+  .summary-note { font-size:.75rem; color:var(--text-sub); padding:0 16px 12px; }
+  .summary-table { border-collapse:collapse; width:100%; font-size:.79rem; }
+  .summary-table th { background:var(--accent); color:#fff; padding:9px 10px; text-align:center; font-weight:600; white-space:nowrap; position:sticky; top:0; z-index:2; }
+  .summary-table th.col-rubrica { text-align:left; position:sticky; left:0; z-index:3; background:var(--accent-dark); min-width:220px; }
+  .summary-table td { padding:7px 10px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; color:var(--text-main); }
+  .summary-table td.col-rubrica { text-align:left; font-weight:600; position:sticky; left:0; z-index:1; background:#fff; }
+  .summary-table tr:nth-child(even) td.col-rubrica { background:#f8fafc; }
+  .summary-table tr:last-child td { border-bottom:none; }
+  .spinner-inline { text-align:center; padding:30px; color:var(--text-sub); font-size:.88rem; }
+  .spinner-inline::before { content:''; display:block; width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .zero { color:#CBD5E0; }
+  .empty-msg { text-align:center; color:var(--text-sub); padding:30px; }
+  
+  /* ELEMENTOS E ANIMAÇÕES DO BOTÃO DESLIZANTE (TOGGLE SWITCH) */
+  .switch-container { display: inline-flex; align-items: center; gap: 8px; font-size: 0.76rem; font-weight: 600; color: #fff; cursor: default; user-select: none; }
+  .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .25s; border-radius: 20px; border: 1px solid rgba(255,255,255,0.35); }
+  .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: #fff; transition: .25s; border-radius: 50%; }
+  input:checked + .slider { background-color: var(--positive); border-color: var(--positive); }
+  input:checked + .slider:before { transform: translateX(18px); }
+
+  @media (max-width: 980px) { .analise-grid { flex-direction:column; } .analise-right { position:static; } }
+  @media (max-width: 860px) { .resumo-panel { flex-direction:column; align-items:flex-start; padding-bottom:44px; } .top-bar, .tab-content { padding-left:16px; padding-right:16px; } .tabs-bar { padding:8px 12px 0; } }
+</style>
+</head>
+<body>
+<div class="top-bar"><h1>Dashboard Orçamentos</h1><span id="status">Sincronizando projetos…</span></div>
+<div class="tabs-bar" id="tabs-bar"></div>
+<div id="tab-panels"></div>
+<script>
+  // Controle de permissão de alteração (Global)
+  let edicaoPermitida = false;
+
+  function alternarModoEdicao(checkado) {
+    edicaoPermitida = checkado;
+    
+    // Atualiza visualmente o body para dar feedback nas tabelas
+    if (edicaoPermitida) {
+      document.body.classList.add('modo-edicao-ativo');
+    } else {
+      document.body.classList.remove('modo-edicao-ativo');
+    }
+
+    // Sincroniza todos os outros switches da tela de forma idêntica
+    document.querySelectorAll('.toggle-edicao-checkbox').forEach(input => {
+      input.checked = checkado;
+    });
+  }
+
+  const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtN = v => v === 0 ? '<span class="zero">—</span>' : (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const pct = (v, total) => total ? ((v / total) * 100).toFixed(1) + '%' : '—';
+  function parseBR(str) { if (typeof str === 'number') return str; const s = str.toString().replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0; }
+  const iconeCal = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+  const detalheCarregado = {};
+  const analiseCarregada = {};
+  google.script.run.withSuccessHandler(renderTabs).withFailureHandler(err => { document.getElementById('status').textContent = '⚠️ ' + err.message; }).getDadosProcessados();
+  function corCirculo(recebido, realizado) { if (!recebido) return '#A0AEC0'; const diferenca = recebido - realizado; const limiar = recebido * 0.10; return diferenca <= limiar ? '#c0392b' : '#4A7C59'; }
+  function renderTabs(resultado) {
+    const statusEl = document.getElementById('status');
+    if (!resultado || resultado.erro) { statusEl.style.color = '#fc8181'; statusEl.textContent = '⚠️ ' + (resultado ? resultado.erro : 'Sem dados'); return; }
+    statusEl.style.display = 'none';
+    const tabsBar = document.getElementById('tabs-bar');
+    const tabPanels = document.getElementById('tab-panels');
+    resultado.forEach((p, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (idx === 0 ? ' active' : '');
+      btn.textContent = p.nome;
+      btn.addEventListener('click', () => ativarAba(idx));
+      tabsBar.appendChild(btn);
+      const vt = p.valorTotal || 0;
+      const saldo = p.saldo != null ? p.saldo : 0;
+      const saldoPos = saldo >= 0;
+      const pctCirc = vt ? Math.min((p.recebido / vt) * 100, 100) : 0;
+      const grau = (pctCirc / 100 * 360).toFixed(1);
+      const cor = corCirculo(p.recebido, p.realizado);
+      function linhaMetrica(dotClass, labelTxt, valor, valorClass, pillTxt, pillClass) { return `<tr><td class="td-label"><span class="dot ${dotClass}"></span>${labelTxt}</td><td class="td-valor ${valorClass}">${fmt(valor)}</td><td class="td-pct"><span class="pct-pill ${pillClass}">${pillTxt}</span></td></tr>`; }
+      const tabelaHTML = linhaMetrica('dot-orcado', 'Orçado', p.orcado, 'c-orcado', pct(p.orcado, vt), 'pill-orcado') + linhaMetrica('dot-realizado', 'Realizado', p.realizado, 'c-realizado', pct(p.realizado, vt), 'pill-realizado') + linhaMetrica('dot-recebido', 'Recebido', p.recebido, 'c-recebido', pct(p.recebido, vt), 'pill-recebido') + linhaMetrica(saldoPos ? 'dot-saldo-pos' : 'dot-saldo-neg', 'Saldo a receber', saldo, saldoPos ? 'c-saldo-pos' : 'c-saldo-neg', (saldoPos ? '' : '-') + pct(Math.abs(saldo), vt), saldoPos ? 'pill-saldo-pos' : 'pill-saldo-neg');
+      const maxRub = p.topRubricas && p.topRubricas.length ? p.topRubricas.valor : 1;
+      const rubHtml = (p.topRubricas || []).map(r => `<div class="rubrica-item"><div class="rubrica-bar-label" title="${r.nome}">${r.nome}</div><div class="rubrica-bar-sub"><div class="rubrica-bg"><div class="rubrica-fill" style="width:${Math.min((r.valor / maxRub) * 100, 100).toFixed(1)}%"></div></div><span class="rubrica-val">${fmt(r.valor)}</span></div></div>`).join('');
+      const rodape = `<div class="resumo-footer">${iconeCal}&nbsp;Atualizado em <strong>${p.ultimaAtualizacao || '–'}</strong></div>`;
+      const nomeSeguro = String(p.nome).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const panel = document.createElement('div');
+      panel.className = 'tab-content' + (idx === 0 ? ' active' : '');
+      panel.id = 'panel-' + idx;
+      
+      // Inserção do Botão deslizante diretamente no contêiner '.detalhe-header' (Canto superior direito)
+      panel.innerHTML = `<div class="resumo-panel"><div style="flex:1 1 320px;overflow-x:auto;"><table class="metricas-table"><thead><tr><th>Indicador</th><th style="text-align:right;padding-right:20px">Valor</th><th style="text-align:right">% do Total</th></tr></thead><tbody>${tabelaHTML}</tbody></table>${vt ? `<div style="font-size:.69rem;color:#A0AEC0;margin-top:8px;">* Valor total do contrato: <b style="color:#718096">${fmt(vt)}</b></div>` : ''}</div><div class="pct-wrap"><div class="pct-circle" style="--cor:${cor};--grau:${grau}deg"><span class="pct-num" style="color:${cor}">${pctCirc.toFixed(1)}%</span></div><div class="pct-label">Recebido /<br>Total do Contrato</div></div><div class="top-rubricas"><div class="top-rubricas-title">Top 2 Rubricas (Realizado)</div>${rubHtml || '<span style="font-size:.78rem;color:#A0AEC0">Sem dados</span>'}</div>${rodape}</div><button class="analise-toggle" id="analise-btn-${idx}" onclick="toggleAnalise(${idx}, '${nomeSeguro}')"><span>▼</span><span>Análise por Rubrica</span></button><div class="analise-wrap" id="analise-wrap-${idx}"><div class="analise-inner"><div class="analise-header"><span>Análise gerencial por Rubrica · ${p.nome}</span><span class="analise-hint">Filtro mensal e acumulado</span></div><div id="analise-body-${idx}"><div class="spinner-inline">Carregando…</div></div></div></div><button class="expand-btn" id="expand-btn-${idx}" onclick="toggleDetalhe(${idx},'${nomeSeguro}')"><span class="arrow">▼</span> Ver detalhe por Rubrica e Mês</button><div class="detalhe-wrap" id="detalhe-wrap-${idx}"><div class="detalhe-inner"><div class="detalhe-header"><div><span>Orçado vs Realizado · ${p.nome}</span></div><div style="display:flex; align-items:center; gap:14px;"><div class="switch-container"><span>Habilitar Edição</span><label class="switch"><input type="checkbox" class="toggle-edicao-checkbox" onchange="alternarModoEdicao(this.checked)"><span class="slider"></span></label></div></div></div><div id="detalhe-body-${idx}"><div class="spinner-inline">Carregando…</div></div><div class="detalhe-legend"><span><span class="tipo-badge badge-orc">Orçado</span> linha clara · editável</span><span><span class="tipo-badge badge-real">Realizado</span> linha branca · editável</span><span><span class="tipo-badge badge-rec">Recebimento</span> receita exibida separadamente</span><span><span class="tipo-badge badge-saldo">Saldo</span> acumulado mês a mês</span><span>— = valor zero</span></div></div></div></div>`;
+      tabPanels.appendChild(panel);
+    });
+  }
+  function ativarAba(idx) { document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx)); document.querySelectorAll('.tab-content').forEach((p, i) => p.classList.toggle('active', i === idx)); }
+  function toggleDetalhe(idx, nomeProjeto) { const wrap = document.getElementById('detalhe-wrap-' + idx); const btn = document.getElementById('expand-btn-' + idx); const isOpen = wrap.classList.contains('open'); if (isOpen) { wrap.classList.remove('open'); btn.classList.remove('open'); return; } wrap.classList.add('open'); btn.classList.add('open'); if (detalheCarregado[idx]) return; detalheCarregado[idx] = true; google.script.run.withSuccessHandler(d => renderDetalhe(d, idx)).withFailureHandler(err => { document.getElementById('detalhe-body-' + idx).innerHTML = '<div class="empty-msg">⚠️ ' + err.message + '</div>'; }).getDetalheProjeto(nomeProjeto); }
+  function renderDetalhe(d, idx) {
+    const bodyEl = document.getElementById('detalhe-body-' + idx);
+    if (!d || d.erro) { bodyEl.innerHTML = '<div class="empty-msg">⚠️ ' + (d ? d.erro : 'Sem dados') + '</div>'; return; }
+    const { projeto, meses, mesesLabel, rubricas, dados } = d;
+    if (!rubricas.length || !meses.length) { bodyEl.innerHTML = '<div class="empty-msg">Nenhum dado encontrado para este projeto.</div>'; return; }
+    const RUBRICA_RECEITA = 'Recebimento';
+    const rubricasReceita = rubricas.filter(r => r === RUBRICA_RECEITA);
+    const rubricasDespesa = rubricas.filter(r => r !== RUBRICA_RECEITA);
+    const totalOrc = {}, totalReal = {}, receitaOrc = {}, receitaReal = {}, saldoOrc = {}, saldoReal = {};
+    meses.forEach(m => { totalOrc[m] = 0; totalReal[m] = 0; receitaOrc[m] = 0; receitaReal[m] = 0; saldoOrc[m] = 0; saldoReal[m] = 0; });
+    let html = `<div class="table-scroll"><table class="detail-table"><thead><tr><th class="col-rubrica">Rubrica</th>${mesesLabel.map(l => `<th>${l}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+    if (rubricasReceita.length) {
+      html += `<tr class="row-receita-sep"><td class="col-rubrica" colspan="${meses.length + 2}"><span class="receita-sep-label">Receita — Recebimentos</span></td></tr>`;
+      rubricasReceita.forEach(rub => { const rubDados = dados[rub] || {}; let totalRubOrc = 0; const cellsOrc = meses.map(m => { const v = (rubDados[m] || {}).orcado || 0; totalRubOrc += v; receitaOrc[m] += v; return `<td class="editavel" data-projeto="${projeto.replace(/"/g,'&quot;')}" data-rubrica="${rub.replace(/"/g,'&quot;')}" data-mes="${m}" data-tipo="orcado" data-valor="${v}" onclick="ativarEdicao(this)">${fmtN(v)}</td>`; }); let totalRubReal = 0; const cellsReal = meses.map(m => { const v = (rubDados[m] || {}).realizado || 0; totalRubReal += v; receitaReal[m] += v; return `<td class="editavel" data-projeto="${projeto.replace(/"/g,'&quot;')}" data-rubrica="${rub.replace(/"/g,'&quot;')}" data-mes="${m}" data-tipo="realizado" data-valor="${v}" onclick="ativarEdicao(this)">${fmtN(v)}</td>`; }); html += `<tr class="row-receita-orc"><td class="col-rubrica">${rub} <span class="tipo-badge badge-orc">Orçado</span></td>${cellsOrc.join('')}<td>${fmtN(totalRubOrc)}</td></tr><tr class="row-receita-real"><td class="col-rubrica">${rub} <span class="tipo-badge badge-rec">Realizado</span></td>${cellsReal.join('')}<td>${fmtN(totalRubReal)}</td></tr>`; }); html += `<tr class="row-receita-sep"><td class="col-rubrica" colspan="${meses.length + 2}"><span class="receita-sep-label">Despesas</span></td></tr>`; }
+    rubricasDespesa.forEach(rub => { const rubDados = dados[rub] || {}; let totalRubOrc = 0; const cellsOrc = meses.map(m => { const v = (rubDados[m] || {}).orcado || 0; totalRubOrc += v; totalOrc[m] += v; return `<td class="editavel" data-projeto="${projeto.replace(/"/g,'&quot;')}" data-rubrica="${rub.replace(/"/g,'&quot;')}" data-mes="${m}" data-tipo="orcado" data-valor="${v}" onclick="ativarEdicao(this)">${fmtN(v)}</td>`; }); let totalRubReal = 0; const cellsReal = meses.map(m => { const v = (rubDados[m] || {}).realizado || 0; totalRubReal += v; totalReal[m] += v; return `<td class="editavel" data-projeto="${projeto.replace(/"/g,'&quot;')}" data-rubrica="${rub.replace(/"/g,'&quot;')}" data-mes="${m}" data-tipo="realizado" data-valor="${v}" onclick="ativarEdicao(this)">${fmtN(v)}</td>`; }); html += `<tr class="row-orcado"><td class="col-rubrica">${rub} <span class="tipo-badge badge-orc">Orçado</span></td>${cellsOrc.join('')}<td>${fmtN(totalRubOrc)}</td></tr><tr class="row-realizado"><td class="col-rubrica">${rub} <span class="tipo-badge badge-real">Realizado</span></td>${cellsReal.join('')}<td>${fmtN(totalRubReal)}</td></tr>`; });
+    let gtOrc = 0, gtReal = 0; const totalCells = meses.map(m => { const o = totalOrc[m], r = totalReal[m]; gtOrc += o; gtReal += r; return `<td><div>${fmtN(o)}</div><div style="color:#4A7C59;font-weight:700">${fmtN(r)}</div></td>`; }); let saldoAnteriorOrc = 0, saldoAnteriorReal = 0; meses.forEach(m => { saldoOrc[m] = saldoAnteriorOrc + receitaOrc[m] - totalOrc[m]; saldoReal[m] = saldoAnteriorReal + receitaReal[m] - totalReal[m]; saldoAnteriorOrc = saldoOrc[m]; saldoAnteriorReal = saldoReal[m]; }); const saldoCellsOrc = meses.map(m => `<td>${fmtN(saldoOrc[m])}</td>`); const saldoCellsReal = meses.map(m => `<td style="color:#4A7C59;font-weight:700">${fmtN(saldoReal[m])}</td>`); const totalSaldoOrc = meses.length ? saldoOrc[meses[meses.length - 1]] : 0; const totalSaldoReal = meses.length ? saldoReal[meses[meses.length - 1]] : 0;
+    html += `<tr class="row-total"><td class="col-rubrica">TOTAL GERAL <span style="font-size:0.62rem;font-weight:400;color:#718096">(despesas)</span></td>${totalCells.join('')}<td><div>${fmtN(gtOrc)}</div><div style="color:#4A7C59;font-weight:700">${fmtN(gtReal)}</div></td></tr><tr class="row-saldo-sep"><td class="col-rubrica" colspan="${meses.length + 2}"><span class="saldo-sep-label">Saldo do projeto</span></td></tr><tr class="row-saldo-orc"><td class="col-rubrica">Saldo <span class="tipo-badge badge-saldo">Orçado</span></td>${saldoCellsOrc.join('')}<td>${fmtN(totalSaldoOrc)}</td></tr><tr class="row-saldo-real"><td class="col-rubrica">Saldo <span class="tipo-badge badge-real">Realizado</span></td>${saldoCellsReal.join('')}<td style="color:#4A7C59;font-weight:700">${fmtN(totalSaldoReal)}</td></tr></tbody></table></div>`;
+    bodyEl.innerHTML = html;
+  }
+  function ativarEdicao(td) { 
+    if (!edicaoPermitida) return; 
+    if (td.querySelector('.cell-input')) return; 
+    const valorAtual = td.dataset.valor || '0'; 
+    const valorEdit = parseFloat(valorAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
+    td.innerHTML = `<input class="cell-input" type="text" value="${valorEdit}" />`; 
+    const input = td.querySelector('.cell-input'); 
+    input.select(); 
+    input.addEventListener('blur', () => confirmarEdicao(td, input)); 
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') cancelarEdicao(td); }); 
+  }
+  function cancelarEdicao(td) { const v = parseFloat(td.dataset.valor) || 0; td.innerHTML = fmtN(v); }
+  function confirmarEdicao(td, input) { const novoValor = parseBR(input.value); const valorAnterior = parseFloat(td.dataset.valor) || 0; if (novoValor === valorAnterior) { td.innerHTML = fmtN(novoValor); return; } const projeto = td.dataset.projeto; const rubrica = td.dataset.rubrica; const mes = td.dataset.mes; const tipo = td.dataset.tipo; td.innerHTML = fmtN(novoValor); td.classList.add('salvando'); google.script.run.withSuccessHandler(res => { td.classList.remove('salvando'); if (res && res.ok) { td.dataset.valor = novoValor; td.classList.add('salvo-ok'); setTimeout(() => td.classList.remove('salvo-ok'), 1500); } else { td.innerHTML = fmtN(valorAnterior); td.classList.add('salvo-erro'); setTimeout(() => td.classList.remove('salvo-erro'), 2000); alert('Erro ao salvar: ' + (res ? res.erro : 'Desconhecido')); } }).withFailureHandler(err => { td.classList.remove('salvando'); td.innerHTML = fmtN(valorAnterior); td.classList.add('salvo-erro'); setTimeout(() => td.classList.remove('salvo-erro'), 2000); alert('Erro de comunicação: ' + err.message); }).salvarValor(projeto, rubrica, mes, tipo, novoValor); }
+  function getResumoPorRubrica(detalheData) {
+    const { rubricas, dados } = detalheData;
+    const RUBRICA_RECEITA = 'Recebimento';
+    const rubricasDespesa = rubricas.filter(r => r !== RUBRICA_RECEITA);
+    return rubricasDespesa.map(rub => {
+      const rubDados = dados[rub] || {};
+      let orc = 0, real = 0;
+      Object.keys(rubDados).forEach(m => { orc += (rubDados[m] || {}).orcado || 0; real += (rubDados[m] || {}).realizado || 0; });
+      const executadoPct = orc ? (real / orc) * 100 : 0;
+      const aExecutar = orc - real;
+      const aExecutarPct = orc ? ((orc - real) / orc) * 100 : 0;
+      let tendencia = 'OK', classe = 'badge-ok';
+      if (executadoPct > 100) { tendencia = '▲'; classe = 'badge-ruim'; }
+      else if (executadoPct > 90) { tendencia = 'Atenção'; classe = 'badge-atencao'; }
+      return { rub, orc, real, executadoPct, aExecutar, aExecutarPct, tendencia, classe, rubDados };
+    }).filter(r => (r.orc > 0) || (r.real > 0)).sort((a, b) => { const ra = String(a.rub).trim().toLowerCase(); const rb = String(b.rub).trim().toLowerCase(); if (ra === 'gestão') return 1; if (rb === 'gestão') return -1; return ra.localeCompare(rb, 'pt-BR', { sensitivity: 'base' }); });
+  }
+  function renderAnaliseRubrica(detalheData, idx) {
+    const bodyId = 'analise-body-' + idx;
+    const bodyEl = document.getElementById(bodyId);
+    if (!bodyEl) return;
+    const rows = getResumoPorRubrica(detalheData);
+    if (!rows.length) { bodyEl.innerHTML = '<div class="empty-msg">Sem Rubricas para análise.</div>'; return; }
+    const meses = detalheData.meses || [];
+    const mesesLabel = detalheData.mesesLabel || meses;
+    const options = meses.map((m, i) => `<option value="${m}">${mesesLabel[i] || m}</option>`).join('');
+    const calcAcumulado = (linha, mesLimite) => { let o = 0, r = 0; for (const m of meses) { const item = linha.rubDados[m] || { orcado: 0, realizado: 0 }; o += item.orcado || 0; r += item.realizado || 0; if (m === mesLimite) break; } const ex = o ? (r / o) * 100 : 0; const ax = o ? ((o - r) / o) * 100 : 0; return { o, r, ex, ax }; };
+    bodyEl.innerHTML = `<div class="analise-grid"><div class="analise-left"><div class="filter-row"><div class="filter-note">Valores fixos na esquerda</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><label for="mes-filter-${idx}" style="font-size:.78rem;color:var(--text-sub);font-weight:700;">Mês</label><select class="month-select" id="mes-filter-${idx}">${options}</select></div></div><div class="table-scroll"><table class="detail-table"><thead><tr><th class="col-rubrica">Rubrica</th><th>Orçado</th><th>Realizado</th><th>% Executado</th><th>% A Executar</th><th>Tendência</th></tr></thead><tbody id="analise-table-body-${idx}"></tbody></table></div></div><div class="analise-right"><div class="summary-card"><div class="summary-title">Tabela filtrada por mês</div><div class="table-scroll"><table class="summary-table"><thead><tr><th class="col-rubrica">Rubrica</th><th>Orçado</th><th>Realizado</th><th>% Executado</th><th>% A Executar</th><th>Tendência</th></tr></thead><tbody id="sum-body-${idx}"></tbody></table></div></div></div></div>`;
+    const tbody = document.getElementById(`analise-table-body-${idx}`);
+    const sumBody = document.getElementById(`sum-body-${idx}`);
+    const select = document.getElementById(`mes-filter-${idx}`);
+    const renderState = (mesSel) => {
+      tbody.innerHTML = rows.map(r => `<tr class="row-${r.classe}"><td class="col-rubrica">${r.rub}</td><td>${fmt(r.orc)}</td><td>${fmt(r.real)}</td><td>${r.executadoPct.toFixed(1)}%</td><td>${r.aExecutarPct.toFixed(1)}%</td><td><span class="tipo-badge ${r.classe}">${r.tendencia}</span></td></tr>`).join('');
+      sumBody.innerHTML = rows.map(r => { const ac = calcAcumulado(r, mesSel); return `<tr class="row-${r.classe}"><td class="col-rubrica">${r.rub}</td><td>${fmt(ac.o)}</td><td>${fmt(ac.r)}</td><td>${ac.ex.toFixed(1)}%</td><td>${ac.ax.toFixed(1)}%</td><td><span class="tipo-badge ${r.classe}">${r.tendencia}</span></td></tr>`; }).join('');
+    };
+    select.addEventListener('change', () => renderState(select.value));
+    select.value = meses[meses.length - 1] || '';
+    renderState(select.value);
+    analiseCarregada[idx] = true;
+  }
+  function toggleAnalise(idx, nomeProjeto) { const wrap = document.getElementById('analise-wrap-' + idx); const btn = document.getElementById('analise-btn-' + idx); const isOpen = wrap.classList.contains('open'); if (isOpen) { wrap.classList.remove('open'); btn.classList.remove('open'); return; } wrap.classList.add('open'); btn.classList.add('open'); if (analiseCarregada[idx]) return; google.script.run.withSuccessHandler(d => renderAnaliseRubrica(d, idx)).withFailureHandler(err => { document.getElementById('analise-body-' + idx).innerHTML = '<div class="empty-msg">⚠️ ' + err.message + '</div>'; }).getDetalheProjeto(nomeProjeto); }
+</script>
+</body>
+</html>
