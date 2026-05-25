@@ -1,5 +1,7 @@
 # Dashboard de Orçamentos
-
+<div align="center">
+  <img src="./assets/painel.png" alt="Dashboard principal com visão consolidada dos projetos" width="900" />
+</div>
 Aplicação web desenvolvida em Google Apps Script para acompanhamento financeiro de projetos a partir de dados do Google Sheets.
 
 ## Sobre o projeto
